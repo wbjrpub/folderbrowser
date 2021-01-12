@@ -10,7 +10,7 @@ repository = "https://github.com/wbjrpub/folderserver"
 include = ['poetry.lock']
 
 [tool.poetry.dependencies]
-python = "3.9.1"
+python = ">=3.6"
 
 [tool.poetry.dev-dependencies]
 black = "^19.10b0"
