@@ -1,3 +1,1 @@
-"""
-Python package skeleton.
-"""
+from . import legacy

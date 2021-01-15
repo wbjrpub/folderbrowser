@@ -1,19 +1,7 @@
 import os, re, subprocess, sys, threading, logging
-from time import sleep
 import html, urllib.request, urllib.parse, urllib.error
 import urllib.parse
 from io import StringIO, BytesIO
-
-log = logging.getLogger('main')
-# TODO: doesn't seem to work. logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S')
-log.setLevel(logging.DEBUG)
-
-# create console handler and set level to info
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
-ch.setFormatter(formatter)
-log.addHandler(ch)
 
 #-------------------------------------------------------------------------------
 from http.server import HTTPServer
@@ -232,7 +220,8 @@ table, th, td {
 
 
 class Server:
-    def __init__(self):
+    def __init__(self, log: logging.Logger):
+        self.log = log
         self.webserver_port = 8081
         self.webserver = HTTPServer(('', self.webserver_port), RequestHandler)
         # self.webserver = HTTPServer(('', self.webserver_port), partial(RequestHandler, self))
@@ -242,9 +231,4 @@ class Server:
         self.thread = threading.Thread(name='webserver', target=self.webserver.serve_forever)
         self.thread.setDaemon(False)
         self.thread.start()
-        print(self.url)
-
-
-if __name__ == "__main__":
-    server = Server()
-    sleep(9999999)
+        log.info("Server URL: %s", self.url)
