@@ -1,11 +1,18 @@
-import os, re, subprocess, sys, threading, logging
-import html, urllib.request, urllib.parse, urllib.error
+import html
+import os
+import re
+import subprocess
+import sys
+import threading
+import urllib.error
 import urllib.parse
-from io import StringIO, BytesIO
+import urllib.parse
+import urllib.request
 
 # -------------------------------------------------------------------------------
 from http.server import HTTPServer
 from http.server import SimpleHTTPRequestHandler
+from io import StringIO, BytesIO
 
 
 class RequestHandler(SimpleHTTPRequestHandler):
@@ -43,12 +50,12 @@ table, th, td {
     @staticmethod
     def sizeof_fmt(num, suffix="B"):
         if num < 1024:
-            return "%dB" % num
+            return str(num) + "B"
         for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
-            if abs(num) < 1024.0:
-                return "%3.1f%s%s" % (num, unit, suffix)
+            if num < 1024.0:
+                return f"{num:3.1f}{unit}{suffix}"
             num /= 1024.0
-        return "%.1f%s%s" % (num, "Yi", suffix)
+        return f"{num:.1f} Yi{suffix}"
 
     def do_GET(self):
         for rx, func in self.routes:
@@ -194,53 +201,28 @@ table, th, td {
     def filepart(self, action, reverse, n=40):
         linkname = urllib.parse.quote(os.path.basename(self.path.strip("/")))
         f = StringIO()
+        more_n = max(2, int(n * 2))
+        less_n = max(1, int(n / 2))
         f.write(
-            """<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+            f"""<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
-  <title>%s</title>
-%s
+  <title>{html.escape(self.translated_path)}</title>
+{self.CSS}
 </head>
 <body>
 <div id='header'>
 <p style='font-size: 14; font-family: monospace; font-weight: bold'>
-<h2>File %s</h2>
-<a href="%s?%s=%d">[Less: %s -n %s]</a>
-<a href="%s?%s=%d">[Redo: %s -n %s]</a>
-<a href="%s?%s=%d">[More: %s -n %s]</a>
-<a href="%s?%s=%d">[Opposite: %s -n %s]</a>
-<a href="%s">[Whole File]</a>
-<a href="%s">[Directory]</a></p>
+<h2>File {self.displaypath}</h2>
+<a href="{linkname}?{action}={less_n}">[Less: {action} -n {less_n}]</a>
+<a href="{linkname}?{action}={n}">[Redo: {action} -n {n}]</a>
+<a href="{linkname}?{action}={more_n}">[More: {action} -n {more_n}]</a>
+<a href="{linkname}?{reverse}={n}">[Opposite: {reverse} -n {n}]</a>
+<a href="{linkname}">[Whole File]</a>
+<a href=".">[Directory]</a></p>
 </div>
 <hr/><pre>
 """
-            % (
-                html.escape(self.translated_path),
-                self.CSS,
-                self.displaypath,  # html.escape(self.translated_path),
-                linkname,
-                action,
-                max(1, int(n / 2)),
-                action,
-                max(1, int(n / 2)),
-                linkname,
-                action,
-                n,
-                action,
-                n,
-                linkname,
-                action,
-                max(2, int(n * 2)),
-                action,
-                max(2, int(n * 2)),
-                linkname,
-                reverse,
-                n,
-                reverse,
-                n,
-                linkname,
-                ".",  #'browse/%s' % urllib.quote(dirname),
-            )
         )
         try:
             s = subprocess.check_output(
@@ -254,16 +236,16 @@ table, th, td {
         f.seek(0)
         self.send_response(200)
         encoding = sys.getfilesystemencoding()
-        self.send_header("Content-type", "text/html; charset=%s" % encoding)
+        self.send_header("Content-type", f"text/html; charset={encoding}")
         self.send_header("Content-Length", str(length))
         self.end_headers()
         self.wfile.write(f.read().encode())
 
     def __default_route(self):
         resp = ""
-        resp += "URL was: %s</br>" % self.path
+        resp += f"URL was: {self.path}</br>"
         resp += '<a href="/browse/">browse</a> '
-        # resp += '<a href="/%d/browse/">browse</a> ' % self.session_id
+        # resp += f'<a href="/{self.session_id}/browse/">browse</a> '
         self.send_response(200)
         self.send_header("content-type", "text/html")
         self.end_headers()
@@ -271,16 +253,17 @@ table, th, td {
 
 
 class Server:
-    self.log = log
-    self.webserver_port = 8081
-    self.webserver = HTTPServer(("", self.webserver_port), RequestHandler)
-    # self.webserver = HTTPServer(('', self.webserver_port), partial(RequestHandler, self))
-    self.webserver.allow_reuse_address = True
-    self.HOSTNAME = "127.0.0.1"
-    self.url = "http://%s:%d/" % (self.HOSTNAME, self.webserver_port)
-    self.thread = threading.Thread(
-        name="webserver", target=self.webserver.serve_forever
-    )
-    self.thread.setDaemon(False)
-    self.thread.start()
-    log.info("Server URL: %s", self.url)
+    def __init__(self, log):
+        self.log = log
+        self.webserver_port = 8081
+        self.webserver = HTTPServer(("", self.webserver_port), RequestHandler)
+        # self.webserver = HTTPServer(('', self.webserver_port), partial(RequestHandler, self))
+        self.webserver.allow_reuse_address = True
+        self.HOSTNAME = "127.0.0.1"
+        self.url = f"http://{self.HOSTNAME}:{self.webserver_port}/"
+        self.thread = threading.Thread(
+            name="webserver", target=self.webserver.serve_forever
+        )
+        self.thread.setDaemon(False)
+        self.thread.start()
+        log.info(f"Server URL: {self.url}")
