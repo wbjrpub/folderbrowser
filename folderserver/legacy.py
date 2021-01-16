@@ -15,25 +15,13 @@ import urllib.request
 from http.server import HTTPServer
 from http.server import SimpleHTTPRequestHandler
 from io import StringIO, BytesIO
+from typing import Callable, Dict
 
 
 class RequestHandler(SimpleHTTPRequestHandler):
     """
     TODO document
     """
-
-    def __init__(self, *args, **kwargs):
-        self.routes = [
-            (re.compile(rx), method)
-            for rx, method in (
-                ("^/browse(?P<path>.*)", self.__browse),
-                # ('^/(?P<session_id>\d+)/browse(?P<path>.*)', self.__browse),
-            )
-        ]
-        self.path = None
-        self.displaypath = None
-        self.translated_path = None
-        SimpleHTTPRequestHandler.__init__(self, *args, **kwargs)
 
     CSS = """
 <style>
@@ -56,6 +44,19 @@ table, th, td {
 </style>
 """
 
+    def __init__(self, *args, **kwargs):
+        self.routes = [
+            (re.compile(rx), method)
+            for rx, method in (
+                ("^/browse(?P<path>.*)", self.__browse),
+                # ('^/(?P<session_id>\d+)/browse(?P<path>.*)', self.__browse),
+            )
+        ]
+        self.path: str = ""
+        self.display_path: str = ""
+        self.translated_path: str = ""
+        super().__init__(*args, **kwargs)
+
     @staticmethod
     def sizeof_fmt(num, suffix="B"):
         """
@@ -77,18 +78,19 @@ table, th, td {
 
         :return:
         """
+        func: Callable[[Dict], None]
         for regex, func in self.routes:
             match = regex.match(self.path)
             if match:
-                groupdict = match.groupdict()
-                # if int(groupdict['session_id']) != self.session_id:
+                group_dict = match.groupdict()
+                # if int(group_dict['session_id']) != self.session_id:
                 #     self.send_error(400, 'Not found')
                 #     return
-                return func(groupdict)
+                return func(group_dict)
         return self.__default_route()
 
-    def __browse(self, groupdict):
-        self.path = groupdict["path"]
+    def __browse(self, group_dict):
+        self.path = group_dict["path"]
         if self.path == "" or os.path.isdir(self.path):
             if not self.path.endswith("/"):
                 self.path += "/"
@@ -105,15 +107,13 @@ table, th, td {
             else:
                 self.send_error(404, "No such action")
                 return
-        self.displaypath = (
+        self.display_path = (
             "Toplevel"
             if self.path == "/"
             else html.escape(urllib.parse.unquote(self.path.strip("/")))
         )
         if action:
-            self.translated_path = SimpleHTTPRequestHandler.translate_path(
-                self, self.path
-            )
+            self.translated_path = self.translate_path(self.path)
             if os.path.isfile(self.translated_path):
                 try:
                     num_lines = int(query_params[action][0])
@@ -122,7 +122,7 @@ table, th, td {
                 self._filepart(action, reverse, num_lines)
                 return
 
-        SimpleHTTPRequestHandler.do_GET(self)
+        super().do_GET()
 
     # pylint: disable=too-many-locals
     def list_directory(self, path):
@@ -136,42 +136,41 @@ table, th, td {
         try:
             entries = os.listdir(path)
         except os.error:
-            self.send_error(404, "No permission to list directory")
+            self.send_error(404, "No permission to list folder")
             return None
         entries.sort(key=lambda a: a.lower())
         buf = StringIO()
         buf.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
         buf.write(
-            "<html>\n<head>\n<title>Directory Listing for %s</title>\n"
-            % self.displaypath
+            "<html>\n<head>\n<title>Folder Listing for %s</title>\n" % self.display_path
         )
         buf.write(self.CSS)
         buf.write(
-            "</head><body>\n<div id='header'><h2>Directory Listing for %s</h2>\n"
-            % self.displaypath
+            "</head><body>\n<div id='header'><h2>Folder Listing for %s</h2>\n"
+            % self.display_path
         )
 
         buf.write("</div><hr>\n<table id='dirlisting'>\n")
         if self.path != "/":
             buf.write(
-                '<tr><td>&nbsp;</td><td colspan=3><a href="..">[Parent Directory]</a></td></tr>\n'
+                '<tr><td>&nbsp;</td><td colspan=3><a href="..">[Parent Folder]</a></td></tr>\n'
             )
         dirs = []
         files = []
         for name in entries:
-            fullname = os.path.join(path, name)
-            displayname = name
-            linkname = name
+            full_name = os.path.join(path, name)
+            display_name = name
+            link_name = name
             # Append / for directories or @ for symbolic links
-            if os.path.isdir(fullname):
-                displayname = name + "/"
-                linkname = name + "/"
-            if os.path.islink(fullname):
-                displayname = name + "@"
-                # Note: a link to a directory displays with @ and links with /
-            linkname_quoted = urllib.parse.quote(linkname)
-            if os.path.isfile(fullname):
-                statinfo = os.stat(fullname)
+            if os.path.isdir(full_name):
+                display_name = name + "/"
+                link_name = name + "/"
+            if os.path.islink(full_name):
+                display_name = name + "@"
+                # Note: a link to a folder displays with @ and links with /
+            linkname_quoted = urllib.parse.quote(link_name)
+            if os.path.isfile(full_name):
+                statinfo = os.stat(full_name)
                 size = self.sizeof_fmt(statinfo.st_size)
                 num_lines = 40
                 files.append(
@@ -184,7 +183,7 @@ table, th, td {
                     % (
                         size,
                         linkname_quoted,
-                        html.escape(displayname),
+                        html.escape(display_name),
                         linkname_quoted,
                         num_lines,
                         num_lines,
@@ -196,12 +195,12 @@ table, th, td {
             else:
                 dirs.append(
                     """<tr>
-  <td align=right>Directory</td>
+  <td align=right>Folder</td>
   <td colspan='3'><a href="%s">%s</a></td>
 </tr>\n"""
                     % (
                         linkname_quoted,
-                        html.escape(displayname),
+                        html.escape(display_name),
                     )
                 )
         for item in dirs:
@@ -233,13 +232,13 @@ table, th, td {
 <body>
 <div id='header'>
 <p style='font-size: 14; font-family: monospace; font-weight: bold'>
-<h2>File {self.displaypath}</h2>
+<h2>File {self.display_path}</h2>
 <a href="{linkname}?{action}={less_n}">[Less: {action} -n {less_n}]</a>
 <a href="{linkname}?{action}={num_lines}">[Redo: {action} -n {num_lines}]</a>
 <a href="{linkname}?{action}={more_n}">[More: {action} -n {more_n}]</a>
 <a href="{linkname}?{reverse}={num_lines}">[Opposite: {reverse} -n {num_lines}]</a>
 <a href="{linkname}">[Whole File]</a>
-<a href=".">[Directory]</a></p>
+<a href=".">[Folder]</a></p>
 </div>
 <hr/><pre>
 """
@@ -279,17 +278,18 @@ class Server:
     TODO document
     """
 
-    def __init__(self, log):
+    def __init__(self, log, bind_address="127.0.0.1", port=8080):
         self.log = log
-        self.webserver_port = 8081
-        self.webserver = HTTPServer(("", self.webserver_port), RequestHandler)
+        self.port = port
+        self.webserver = HTTPServer(("", self.port), RequestHandler)
         # self.webserver = HTTPServer(('', self.webserver_port), partial(RequestHandler, self))
         self.webserver.allow_reuse_address = True
-        self.hostname = "127.0.0.1"
-        self.url = f"http://{self.hostname}:{self.webserver_port}/"
+        self.bind_address = bind_address
+        self.url = f"http://{self.bind_address}:{self.port}/"
         self.thread = threading.Thread(
             name="webserver", target=self.webserver.serve_forever
         )
         self.thread.setDaemon(False)
         self.thread.start()
         log.info(f"Server URL: {self.url}")
+        log.info(f"Browse URL: {self.url}browse/")

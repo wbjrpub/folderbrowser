@@ -10,14 +10,11 @@ Folder Server
    :target: https://github.com/wbjrpub/folderserver/actions
    :alt: GitHub Actions
 
-Package skeleton for an Python module.
-
 Description
 -----------
 
-$
-TODO$
-
+Generate webpages for browsing a folder via the web. Can act as a stand-alone webserver, or in future embeddable
+in another application.
 
 Installation
 ------------
@@ -31,8 +28,22 @@ Install it with
 
     $ poetry install folderserver
 
+or
+    $ pip install folderserver
+
 .. _folderserver: https://pypi.python.org/pypi/folderserver
 .. _Python Package Index (PyPI): https://pypi.python.org/
+
+Running
+-------
+
+    $ python -m folderserver
+
+This prints something like
+
+    2021-01-16 21:36:11,279 INFO: Server URL: http://127.0.0.1:8081/
+
+You can then browse the contents of the invocation directory via the URL shown.
 
 Development and Testing
 -----------------------
@@ -43,7 +54,7 @@ Quickstart
 ::
 
     $ git clone https://github.com/wbjrpub/folderserver.git
-    $ cd pypackage
+    $ cd folderserver
     $ poetry install
 
 Run each command below in a separate terminal window:
@@ -96,7 +107,7 @@ Run tests with
 
     $ make test
 
-Run tests on chages with
+Run tests on changes with
 
 ::
 
