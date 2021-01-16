@@ -1,4 +1,19 @@
 repos:
+  -   repo: local
+      hooks:
+        -   id: pylint
+            name: pylint
+            entry: pylint
+            language: system
+            types: [python]
+        -   id: Makefile-lint
+            name: make lint
+            language: system
+            entry: make lint
+        -   id: Makefile-test
+            name: make test
+            language: system
+            entry: make test
   -   repo: https://github.com/pre-commit/pre-commit-hooks
       rev: v2.3.0
       hooks:

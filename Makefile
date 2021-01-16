@@ -18,7 +18,7 @@ publish:
 	@poetry run twine upload --skip-existing dist/*
 
 test:
-	@poetry run pytest --inc --cov=./folderserver
+	@poetry run pytest --cov=./folderserver
 
 watch:
 	@poetry run ptw
