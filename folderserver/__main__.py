@@ -1,5 +1,7 @@
+"""
+TODO document
+"""
 import logging
-import sys
 from time import sleep
 
 from .legacy import Server
@@ -15,11 +17,15 @@ ch.setFormatter(formatter)
 log.addHandler(ch)
 
 
-def main(argv):
-    global server
+def main():
+    """
+    Runs a folderserver.
+    Does not return.
+    """
+    # pylint: disable=unused-variable
     server = Server(log)
     sleep(9999999)
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()

@@ -1,3 +1,6 @@
+"""
+TODO document
+"""
 import html
 import os
 import re
@@ -5,7 +8,6 @@ import subprocess
 import sys
 import threading
 import urllib.error
-import urllib.parse
 import urllib.parse
 import urllib.request
 
@@ -16,6 +18,10 @@ from io import StringIO, BytesIO
 
 
 class RequestHandler(SimpleHTTPRequestHandler):
+    """
+    TODO document
+    """
+
     def __init__(self, *args, **kwargs):
         self.routes = [
             (re.compile(rx), method)
@@ -24,6 +30,9 @@ class RequestHandler(SimpleHTTPRequestHandler):
                 # ('^/(?P<session_id>\d+)/browse(?P<path>.*)', self.__browse),
             )
         ]
+        self.path = None
+        self.displaypath = None
+        self.translated_path = None
         SimpleHTTPRequestHandler.__init__(self, *args, **kwargs)
 
     CSS = """
@@ -49,6 +58,12 @@ table, th, td {
 
     @staticmethod
     def sizeof_fmt(num, suffix="B"):
+        """
+
+        :param num:
+        :param suffix:
+        :return:
+        """
         if num < 1024:
             return str(num) + "B"
         for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
@@ -58,10 +73,14 @@ table, th, td {
         return f"{num:.1f} Yi{suffix}"
 
     def do_GET(self):
-        for rx, func in self.routes:
-            m = rx.match(self.path)
-            if m:
-                groupdict = m.groupdict()
+        """
+
+        :return:
+        """
+        for regex, func in self.routes:
+            match = regex.match(self.path)
+            if match:
+                groupdict = match.groupdict()
                 # if int(groupdict['session_id']) != self.session_id:
                 #     self.send_error(400, 'Not found')
                 #     return
@@ -97,14 +116,15 @@ table, th, td {
             )
             if os.path.isfile(self.translated_path):
                 try:
-                    n = int(query_params[action][0])
-                except:
-                    n = 40
-                self.filepart(action, reverse, n)
+                    num_lines = int(query_params[action][0])
+                except Exception:  # pylint: disable=broad-except
+                    num_lines = 40
+                self._filepart(action, reverse, num_lines)
                 return
 
-        return SimpleHTTPRequestHandler.do_GET(self)
+        SimpleHTTPRequestHandler.do_GET(self)
 
+    # pylint: disable=too-many-locals
     def list_directory(self, path):
         """Helper to produce a directory listing (absent index.html).
 
@@ -119,21 +139,21 @@ table, th, td {
             self.send_error(404, "No permission to list directory")
             return None
         entries.sort(key=lambda a: a.lower())
-        f = StringIO()
-        f.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
-        f.write(
+        buf = StringIO()
+        buf.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
+        buf.write(
             "<html>\n<head>\n<title>Directory Listing for %s</title>\n"
             % self.displaypath
         )
-        f.write(self.CSS)
-        f.write(
+        buf.write(self.CSS)
+        buf.write(
             "</head><body>\n<div id='header'><h2>Directory Listing for %s</h2>\n"
             % self.displaypath
         )
 
-        f.write("</div><hr>\n<table id='dirlisting'>\n")
+        buf.write("</div><hr>\n<table id='dirlisting'>\n")
         if self.path != "/":
-            f.write(
+            buf.write(
                 '<tr><td>&nbsp;</td><td colspan=3><a href="..">[Parent Directory]</a></td></tr>\n'
             )
         dirs = []
@@ -153,7 +173,7 @@ table, th, td {
             if os.path.isfile(fullname):
                 statinfo = os.stat(fullname)
                 size = self.sizeof_fmt(statinfo.st_size)
-                n = 40
+                num_lines = 40
                 files.append(
                     """<tr>
   <td align=right>%s</td>
@@ -166,11 +186,11 @@ table, th, td {
                         linkname_quoted,
                         html.escape(displayname),
                         linkname_quoted,
-                        n,
-                        n,
+                        num_lines,
+                        num_lines,
                         linkname_quoted,
-                        n,
-                        n,
+                        num_lines,
+                        num_lines,
                     )
                 )
             else:
@@ -184,26 +204,26 @@ table, th, td {
                         html.escape(displayname),
                     )
                 )
-        for s in dirs:
-            f.write(s)
-        for s in files:
-            f.write(s)
-        f.write("</table>\n</body>\n</html>\n")
-        length = f.tell()
-        f.seek(0)
+        for item in dirs:
+            buf.write(item)
+        for item in files:
+            buf.write(item)
+        buf.write("</table>\n</body>\n</html>\n")
+        length = buf.tell()
+        buf.seek(0)
         self.send_response(200)
         encoding = sys.getfilesystemencoding()
         self.send_header("Content-type", "text/html; charset=%s" % encoding)
         self.send_header("Content-Length", str(length))
         self.end_headers()
-        return BytesIO(f.read().encode())
+        return BytesIO(buf.read().encode())
 
-    def filepart(self, action, reverse, n=40):
+    def _filepart(self, action, reverse, num_lines=40):
         linkname = urllib.parse.quote(os.path.basename(self.path.strip("/")))
-        f = StringIO()
-        more_n = max(2, int(n * 2))
-        less_n = max(1, int(n / 2))
-        f.write(
+        buf = StringIO()
+        more_n = max(2, int(num_lines * 2))
+        less_n = max(1, int(num_lines / 2))
+        buf.write(
             f"""<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
@@ -215,9 +235,9 @@ table, th, td {
 <p style='font-size: 14; font-family: monospace; font-weight: bold'>
 <h2>File {self.displaypath}</h2>
 <a href="{linkname}?{action}={less_n}">[Less: {action} -n {less_n}]</a>
-<a href="{linkname}?{action}={n}">[Redo: {action} -n {n}]</a>
+<a href="{linkname}?{action}={num_lines}">[Redo: {action} -n {num_lines}]</a>
 <a href="{linkname}?{action}={more_n}">[More: {action} -n {more_n}]</a>
-<a href="{linkname}?{reverse}={n}">[Opposite: {reverse} -n {n}]</a>
+<a href="{linkname}?{reverse}={num_lines}">[Opposite: {reverse} -n {num_lines}]</a>
 <a href="{linkname}">[Whole File]</a>
 <a href=".">[Directory]</a></p>
 </div>
@@ -225,21 +245,22 @@ table, th, td {
 """
         )
         try:
-            s = subprocess.check_output(
-                [action, "-n", str(n), self.translated_path], encoding="utf-8"
+            txt = subprocess.check_output(
+                [action, "-n", str(num_lines), self.translated_path], encoding="utf-8"
             )
-            f.write(html.escape(s))
+            buf.write(html.escape(txt))
+        # pylint: disable=broad-except
         except Exception as ex:
-            f.write(str(ex))
-        f.write("""</pre></body></html>""")
-        length = f.tell()
-        f.seek(0)
+            buf.write(str(ex))
+        buf.write("""</pre></body></html>""")
+        length = buf.tell()
+        buf.seek(0)
         self.send_response(200)
         encoding = sys.getfilesystemencoding()
         self.send_header("Content-type", f"text/html; charset={encoding}")
         self.send_header("Content-Length", str(length))
         self.end_headers()
-        self.wfile.write(f.read().encode())
+        self.wfile.write(buf.read().encode())
 
     def __default_route(self):
         resp = ""
@@ -252,15 +273,20 @@ table, th, td {
         self.wfile.write(str.encode(resp))
 
 
+# pylint: disable=too-few-public-methods
 class Server:
+    """
+    TODO document
+    """
+
     def __init__(self, log):
         self.log = log
         self.webserver_port = 8081
         self.webserver = HTTPServer(("", self.webserver_port), RequestHandler)
         # self.webserver = HTTPServer(('', self.webserver_port), partial(RequestHandler, self))
         self.webserver.allow_reuse_address = True
-        self.HOSTNAME = "127.0.0.1"
-        self.url = f"http://{self.HOSTNAME}:{self.webserver_port}/"
+        self.hostname = "127.0.0.1"
+        self.url = f"http://{self.hostname}:{self.webserver_port}/"
         self.thread = threading.Thread(
             name="webserver", target=self.webserver.serve_forever
         )
