@@ -20,6 +20,9 @@ publish:
 test:
 	@poetry run pytest --cov=./folderserver
 
+test-nocov:
+	@poetry run pytest
+
 watch:
 	@poetry run ptw
 
