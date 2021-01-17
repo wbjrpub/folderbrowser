@@ -198,10 +198,7 @@ table, th, td {
   <td align=right>Folder</td>
   <td colspan='3'><a href="%s">%s</a></td>
 </tr>\n"""
-                    % (
-                        linkname_quoted,
-                        html.escape(display_name),
-                    )
+                    % (linkname_quoted, html.escape(display_name),)
                 )
         for item in dirs:
             buf.write(item)
@@ -293,3 +290,13 @@ class Server:
         self.thread.start()
         log.info(f"Server URL: {self.url}")
         log.info(f"Browse URL: {self.url}browse/")
+
+    def stop(self):
+        try:
+            self.webserver.shutdown()
+        except Exception as ex:
+            self.log(f"shutdown: {ex}")
+        try:
+            self.thread.join(1.0)
+        except Exception as ex:
+            self.log(f"thread.join: {ex}")

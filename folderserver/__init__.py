@@ -1,4 +1,4 @@
 """
 TODO document
 """
-from . import legacy
+from .legacy import *
