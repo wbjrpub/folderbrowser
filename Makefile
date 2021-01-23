@@ -21,12 +21,11 @@ publish:
 
 test:
 	@poetry run pytest
-#	@poetry run pytest --cov=./folderbrowser
 
-test-nocov:
-	@poetry run pytest
+test-with-coverage:
+	@poetry run pytest --cov=./folderbrowser
 
 watch:
 	@poetry run ptw
 
-.PHONY: build docs test
+.PHONY: all build clean docs format lint publish test test-with-coverage watch

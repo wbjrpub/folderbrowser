@@ -1,10 +1,9 @@
 """
-TODO document
+Provides classes to implement a folder browser.
 """
 import html
 import logging
 import os
-import re
 import subprocess
 import sys
 import threading
@@ -15,13 +14,12 @@ import urllib.request
 # -------------------------------------------------------------------------------
 from http.server import HTTPServer
 from http.server import SimpleHTTPRequestHandler
-from io import StringIO, BytesIO
-from typing import Callable, Dict
+from io import StringIO
 
 
-class RequestHandler(SimpleHTTPRequestHandler):
+class FolderBrowserHandler:
     """
-    TODO document
+    Provides the main do_GET method for browsing a folder or viewing a file
     """
 
     CSS = """
@@ -45,18 +43,11 @@ table, th, td {
 </style>
 """
 
-    def __init__(self, *args, **kwargs):
-        self.routes = [
-            (re.compile(rx), method)
-            for rx, method in (
-                ("^/browse(?P<path>.*)", self.__browse),
-                # ('^/(?P<session_id>\d+)/browse(?P<path>.*)', self.__browse),
-            )
-        ]
+    def __init__(self, request_handler: SimpleHTTPRequestHandler):
+        self.request_handler = request_handler
         self.path: str = ""
         self.display_path: str = ""
         self.translated_path: str = ""
-        super().__init__(*args, **kwargs)
 
     @staticmethod
     def sizeof_fmt(num, suffix="B"):
@@ -74,30 +65,28 @@ table, th, td {
             num /= 1024.0
         return f"{num:.1f} Yi{suffix}"
 
+    # pylint: disable=invalid-name
     def do_GET(self):
         """
-
-        :return:
+        Generate a response for the given path.
+        :return: None if this function has generated the response.
+        False if no response was genereted, i.e. the path was not handled.
         """
-        func: Callable[[Dict], None]
-        for regex, func in self.routes:
-            match = regex.match(self.path)
-            if match:
-                group_dict = match.groupdict()
-                # if int(group_dict['session_id']) != self.session_id:
-                #     self.send_error(400, 'Not found')
-                #     return
-                return func(group_dict)
-        return self.__default_route()
-
-    def __browse(self, group_dict):
-        self.path = group_dict["path"]
-        if self.path == "" or os.path.isdir(self.path):
-            if not self.path.endswith("/"):
-                self.path += "/"
-        action = reverse = None
+        self.path = self.request_handler.path
         if "?" in self.path:
             self.path, query_params = self.path.split("?", 1)
+        else:
+            self.path, query_params = self.path, None
+
+        local_path = "." + self.path
+        if os.path.isdir(local_path):
+            self._handle_directory(local_path)
+            return None
+
+        self.display_path = self._get_display_path()
+
+        action = reverse = None
+        if query_params is not None:
             query_params = urllib.parse.parse_qs(query_params)
             if "tail" in query_params:
                 action = "tail"
@@ -106,39 +95,34 @@ table, th, td {
                 action = "head"
                 reverse = "tail"
             else:
-                self.send_error(404, "No such action")
-                return
-        self.display_path = (
-            "Toplevel"
-            if self.path == "/"
-            else html.escape(urllib.parse.unquote(self.path.strip("/")))
-        )
+                self.request_handler.send_error(404, "No such action")
+                return None
         if action:
-            self.translated_path = self.translate_path(self.path)
+            self.translated_path = self.request_handler.translate_path(self.path)
             if os.path.isfile(self.translated_path):
                 try:
                     num_lines = int(query_params[action][0])
                 except Exception:  # pylint: disable=broad-except
                     num_lines = 40
-                self._filepart(action, reverse, num_lines)
-                return
+                self._send_part_of_file(action, reverse, num_lines)
+                return None
+        # Not handled by us:
+        return False
 
-        super().do_GET()
+    def _handle_directory(self, local_path):
+        if not self.path.endswith("/"):
+            self.path += "/"
+        self.display_path = self._get_display_path()
+        self._list_directory(local_path)
 
     # pylint: disable=too-many-locals
-    def list_directory(self, path):
-        """Helper to produce a directory listing (absent index.html).
-
-        Return value is either a file object, or None (indicating an
-        error).  In either case, the headers are sent, making the
-        interface the same as for send_head().
-
-        """
+    def _list_directory(self, local_path):
+        """Helper to produce a directory listing."""
         try:
-            entries = os.listdir(path)
+            entries = os.listdir(local_path)
         except os.error:
-            self.send_error(404, "No permission to list folder")
-            return None
+            self.request_handler.send_error(404, "No permission to list folder")
+            return
         entries.sort(key=lambda a: a.lower())
         buf = StringIO()
         buf.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
@@ -159,7 +143,7 @@ table, th, td {
         dirs = []
         files = []
         for name in entries:
-            full_name = os.path.join(path, name)
+            full_name = os.path.join(local_path, name)
             display_name = name
             link_name = name
             # Append / for directories or @ for symbolic links
@@ -211,15 +195,17 @@ table, th, td {
         buf.write("</table>\n</body>\n</html>\n")
         length = buf.tell()
         buf.seek(0)
-        self.send_response(200)
+        self.request_handler.send_response(200)
         encoding = sys.getfilesystemencoding()
-        self.send_header("Content-type", "text/html; charset=%s" % encoding)
-        self.send_header("Content-Length", str(length))
-        self.end_headers()
-        return BytesIO(buf.read().encode())
+        self.request_handler.send_header(
+            "Content-type", "text/html; charset=%s" % encoding
+        )
+        self.request_handler.send_header("Content-Length", str(length))
+        self.request_handler.end_headers()
+        self.request_handler.wfile.write(buf.read().encode())
 
-    def _filepart(self, action, reverse, num_lines=40):
-        linkname = urllib.parse.quote(os.path.basename(self.path.strip("/")))
+    def _send_part_of_file(self, action, reverse, num_lines=40):
+        link_name = urllib.parse.quote(os.path.basename(self.path.strip("/")))
         buf = StringIO()
         more_n = max(2, int(num_lines * 2))
         less_n = max(1, int(num_lines / 2))
@@ -234,11 +220,11 @@ table, th, td {
 <div id='header'>
 <p style='font-size: 14; font-family: monospace; font-weight: bold'>
 <h2>File {self.display_path}</h2>
-<a href="{linkname}?{action}={less_n}">[Less: {action} -n {less_n}]</a>
-<a href="{linkname}?{action}={num_lines}">[Redo: {action} -n {num_lines}]</a>
-<a href="{linkname}?{action}={more_n}">[More: {action} -n {more_n}]</a>
-<a href="{linkname}?{reverse}={num_lines}">[Opposite: {reverse} -n {num_lines}]</a>
-<a href="{linkname}">[Whole File]</a>
+<a href="{link_name}?{action}={less_n}">[Less: {action} -n {less_n}]</a>
+<a href="{link_name}?{action}={num_lines}">[Redo: {action} -n {num_lines}]</a>
+<a href="{link_name}?{action}={more_n}">[More: {action} -n {more_n}]</a>
+<a href="{link_name}?{reverse}={num_lines}">[Opposite: {reverse} -n {num_lines}]</a>
+<a href="{link_name}">[Whole File]</a>
 <a href=".">[Folder]</a></p>
 </div>
 <hr/><pre>
@@ -255,28 +241,44 @@ table, th, td {
         buf.write("""</pre></body></html>""")
         length = buf.tell()
         buf.seek(0)
-        self.send_response(200)
+        self.request_handler.send_response(200)
         encoding = sys.getfilesystemencoding()
-        self.send_header("Content-type", f"text/html; charset={encoding}")
-        self.send_header("Content-Length", str(length))
-        self.end_headers()
-        self.wfile.write(buf.read().encode())
+        self.request_handler.send_header(
+            "Content-type", f"text/html; charset={encoding}"
+        )
+        self.request_handler.send_header("Content-Length", str(length))
+        self.request_handler.end_headers()
+        self.request_handler.wfile.write(buf.read().encode())
 
-    def __default_route(self):
-        resp = ""
-        resp += f"URL was: {self.path}</br>"
-        resp += '<a href="/browse/">browse</a> '
-        # resp += f'<a href="/{self.session_id}/browse/">browse</a> '
-        self.send_response(200)
-        self.send_header("content-type", "text/html")
-        self.end_headers()
-        self.wfile.write(str.encode(resp))
+    def _get_display_path(self):
+        if self.path == "/":
+            return "Toplevel"
+        return html.escape(urllib.parse.unquote(self.path.strip("/")))
+
+
+class RequestHandler(SimpleHTTPRequestHandler):
+    """
+    Handles http GET requests for the Server class in this module.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.folder_browser_handler = FolderBrowserHandler(self)
+        super().__init__(*args, **kwargs)
+
+    def do_GET(self):
+        """
+        :return:
+        """
+        result = self.folder_browser_handler.do_GET()
+        if result is False:
+            super().do_GET()
 
 
 # pylint: disable=too-few-public-methods
 class Server:
     """
-    TODO document
+    Creates and starts an http server, allowing access to the current folder
+    and its contents (including subfolders).
     """
 
     def __init__(
@@ -301,7 +303,6 @@ class Server:
         self.thread.setDaemon(False)
         self.thread.start()
         log.info(f"Server URL: {self.url}")
-        log.info(f"Browse URL: {self.url}browse/")
 
     def stop(self):
         """
@@ -313,10 +314,10 @@ class Server:
             self.webserver.shutdown()
         except Exception as ex:  # pylint: disable=broad-except
             result.append(ex)
-            self.log(f"shutdown: {ex}")
+            self.log.error(f"shutdown: {ex}")
         try:
             self.thread.join(1.0)
         except Exception as ex:  # pylint: disable=broad-except
             result.append(ex)
-            self.log(f"thread.join: {ex}")
+            self.log.error(f"thread.join: {ex}")
         return result

@@ -30,11 +30,16 @@ def test_server_toplevel():
     print(resp)
     print(resp.text)
     assert resp.status_code == 200
-    assert ">browse</a>" in resp.text
+    print(resp)
+    print(resp.text)
+    assert resp.status_code == 200
+    assert "<title>Folder Listing for Toplevel</title>" in resp.text
+    assert """Parent Folder""" not in resp.text
+    assert """<td colspan='3'><a href="fixtures/">fixtures/</a></td>""" in resp.text
 
 
 def test_server_file1000():
-    resp = requests.get("http://127.0.0.1:12345/browse/fixtures/file1000.txt")
+    resp = requests.get("http://127.0.0.1:12345/fixtures/file1000.txt")
     print(resp)
     print(resp.text)
     assert resp.status_code == 200
@@ -53,7 +58,7 @@ def test_server_file1000_parts():
         ("tail", 10000),
     ):
         resp = requests.get(
-            f"http://127.0.0.1:12345/browse/fixtures/file1000.txt?{action}={count}"
+            f"http://127.0.0.1:12345/fixtures/file1000.txt?{action}={count}"
         )
         print(resp)
         print(resp.text)
@@ -91,7 +96,7 @@ def test_server_file1000_parts():
 
 
 def test_server_fixtures_folder():
-    resp = requests.get("http://127.0.0.1:12345/browse/fixtures/")
+    resp = requests.get("http://127.0.0.1:12345/fixtures/")
     print(resp)
     print(resp.text)
     assert resp.status_code == 200
@@ -112,7 +117,7 @@ def test_server_fixtures_folder():
 
 
 def test_server_non_existing_file():
-    resp = requests.get("http://127.0.0.1:12345/browse/fixtures/non_existing_file.txt")
+    resp = requests.get("http://127.0.0.1:12345/fixtures/non_existing_file.txt")
     print(resp)
     print(resp.text)
     assert resp.status_code == 404
