@@ -3,11 +3,11 @@ Folder Server
 
 |PyPI| |GitHub Actions|
 
-.. |PyPI| image:: https://img.shields.io/pypi/v/folderserver.svg
-   :target: https://pypi.python.org/pypi/folderserver
+.. |PyPI| image:: https://img.shields.io/pypi/v/folderbrowser.svg
+   :target: https://pypi.python.org/pypi/folderbrowser
    :alt: PyPI
-.. |GitHub Actions| image:: https://github.com/wbjrpub/folderserver/workflows/main/badge.svg
-   :target: https://github.com/wbjrpub/folderserver/actions
+.. |GitHub Actions| image:: https://github.com/wbjrpub/folderbrowser/workflows/main/badge.svg
+   :target: https://github.com/wbjrpub/folderbrowser/actions
    :alt: GitHub Actions
 
 Description
@@ -20,24 +20,24 @@ Installation
 ------------
 
 This package is registered on the `Python Package Index (PyPI)`_
-as folderserver_.
+as folderbrowser_.
 
 Install it with
 
 ::
 
-    $ poetry install folderserver
+    $ poetry install folderbrowser
 
 or
-    $ pip install folderserver
+    $ pip install folderbrowser
 
-.. _folderserver: https://pypi.python.org/pypi/folderserver
+.. _folderbrowser: https://pypi.python.org/pypi/folderbrowser
 .. _Python Package Index (PyPI): https://pypi.python.org/
 
 Running
 -------
 
-    $ python -m folderserver
+    $ python -m folderbrowser
 
 This prints something like
 
@@ -53,8 +53,8 @@ Quickstart
 
 ::
 
-    $ git clone https://github.com/wbjrpub/folderserver.git
-    $ cd folderserver
+    $ git clone https://github.com/wbjrpub/folderbrowser.git
+    $ cd folderbrowser
     $ poetry install
 
 Run each command below in a separate terminal window:
@@ -73,9 +73,9 @@ Clone the project with
 
 ::
 
-    $ git clone https://github.com/wbjrpub/folderserver.git
+    $ git clone https://github.com/wbjrpub/folderbrowser.git
 
-.. _source code: https://github.com/wbjrpub/folderserver
+.. _source code: https://github.com/wbjrpub/folderbrowser
 
 Requirements
 ~~~~~~~~~~~~
@@ -124,7 +124,7 @@ Push the created git tag which will trigger a GitHub action.
 Publishing may be triggered using on the web
 using a `workflow_dispatch on GitHub Actions`_.
 
-.. _workflow_dispatch on GitHub Actions: https://github.com/wbjrpub/folderserver/actions?query=workflow%3Aversion
+.. _workflow_dispatch on GitHub Actions: https://github.com/wbjrpub/folderbrowser/actions?query=workflow%3Aversion
 
 GitHub Actions
 --------------
@@ -161,7 +161,7 @@ Please submit and comment on bug reports and feature requests.
 
 To submit a patch:
 
-1. Fork it (https://github.com/wbjrpub/folderserver/fork).
+1. Fork it (https://github.com/wbjrpub/folderbrowser/fork).
 2. Create your feature branch (`git checkout -b my-new-feature`).
 3. Make changes.
 4. Commit your changes (`git commit -am 'Add some feature'`).

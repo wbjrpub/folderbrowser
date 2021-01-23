@@ -1,14 +1,30 @@
 [tool.poetry]
-name = "folderserver"
+name = "folderbrowser"
 version = "0.0.0"
 description = "Lightweight webserver to browse folder and its contents on a webbrowser"
 authors = ["Wouter Batelaan <wbjrpub@gmail.com>"]
+keywords = ["folder", "directory", "webserver"]
+#documentation = https://...
 license = "MIT"
 readme = "README.rst"
-homepage = "https://github.com/wbjrpub/folderserver"
-repository = "https://github.com/wbjrpub/folderserver"
+homepage = "https://github.com/wbjrpub/folderbrowser"
+repository = "https://github.com/wbjrpub/folderbrowser"
 include = ['poetry.lock']
-
+packages = [
+    { include = "folderbrowser" },
+]
+# See https://pypi.org/classifiers/
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Topic :: Communications :: File Sharing",
+    "Topic :: Internet :: WWW/HTTP :: Browsers",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+]
 [tool.poetry.dependencies]
 python = ">=3.6"
 

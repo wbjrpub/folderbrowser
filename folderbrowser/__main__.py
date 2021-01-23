@@ -6,9 +6,9 @@ import logging
 import sys
 from time import sleep
 
-from .legacy import Server
+from .server import Server
 
-log = logging.getLogger("folderserver.main")
+log = logging.getLogger("folderbrowser.main")
 log.setLevel(logging.DEBUG)
 
 # create console handler and set level to info
@@ -21,7 +21,7 @@ log.addHandler(ch)
 
 def main(args):
     """
-    Runs a folderserver.
+    Runs a folderbrowser.
     Does not return.
     """
 

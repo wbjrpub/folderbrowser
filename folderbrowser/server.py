@@ -2,6 +2,7 @@
 TODO document
 """
 import html
+import logging
 import os
 import re
 import subprocess
@@ -198,7 +199,10 @@ table, th, td {
   <td align=right>Folder</td>
   <td colspan='3'><a href="%s">%s</a></td>
 </tr>\n"""
-                    % (linkname_quoted, html.escape(display_name),)
+                    % (
+                        linkname_quoted,
+                        html.escape(display_name),
+                    )
                 )
         for item in dirs:
             buf.write(item)
@@ -275,7 +279,15 @@ class Server:
     TODO document
     """
 
-    def __init__(self, log, bind_address="127.0.0.1", port=8080):
+    def __init__(
+        self, log: logging.Logger, bind_address: str = "127.0.0.1", port: int = 8080
+    ):
+        """
+        :param log: for logging
+        :param bind_address: use "0.0.0.0" to listen on all addresses.
+        Defaults to localhost only.
+        :param port: port to listen on.
+        """
         self.log = log
         self.port = port
         self.webserver = HTTPServer(("", self.port), RequestHandler)
@@ -292,11 +304,19 @@ class Server:
         log.info(f"Browse URL: {self.url}browse/")
 
     def stop(self):
+        """
+        Stop processing. Returns
+        :return: list of Exceptions encountered.
+        """
+        result = []
         try:
             self.webserver.shutdown()
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
+            result.append(ex)
             self.log(f"shutdown: {ex}")
         try:
             self.thread.join(1.0)
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
+            result.append(ex)
             self.log(f"thread.join: {ex}")
+        return result

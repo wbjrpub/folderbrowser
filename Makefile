@@ -1,4 +1,6 @@
-all: lint test
+# https://python-poetry.org/
+
+all: format lint test
 
 build:
 	@rm -rf dist
@@ -11,14 +13,15 @@ format:
 	@poetry run black .
 
 lint:
-	@poetry run pylint ./folderserver
+	@poetry run pylint ./folderbrowser
 	@poetry run black --check .
 
 publish:
 	@poetry run twine upload --skip-existing dist/*
 
 test:
-	@poetry run pytest --cov=./folderserver
+	@poetry run pytest
+#	@poetry run pytest --cov=./folderbrowser
 
 test-nocov:
 	@poetry run pytest

@@ -7,4 +7,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-[Unreleased]: https://github.com/wbjrpub/folderserver/compare/v0.0.0...HEAD
+[Unreleased]: https://github.com/wbjrpub/folderbrowser/compare/v0.0.0...HEAD

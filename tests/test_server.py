@@ -7,7 +7,7 @@ import os
 from time import sleep
 import requests
 
-from folderserver import Server
+from folderbrowser import Server
 
 
 def setup_module(module):
