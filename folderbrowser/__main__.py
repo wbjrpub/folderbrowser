@@ -42,7 +42,11 @@ def main(args):
     # pylint: disable=unused-variable
     options = parser.parse_args(args)
     server = Server(log, bind_address=options.bind_address, port=options.port)
-    sleep(9999999)
+    try:
+        sleep(9999999)
+    except KeyboardInterrupt:
+        pass
+    server.stop()
 
 
 if __name__ == "__main__":

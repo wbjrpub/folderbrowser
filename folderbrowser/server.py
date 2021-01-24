@@ -52,25 +52,25 @@ table, th, td {
     @staticmethod
     def sizeof_fmt(num, suffix="B"):
         """
-
+        Easy to read (approximate) size indicator (KiB, MiB).
         :param num:
         :param suffix:
         :return:
         """
         if num < 1024:
             return str(num) + "B"
-        for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+        for unit in ["", "K", "M", "G", "T", "P", "E", "Z"]:
             if num < 1024.0:
                 return f"{num:3.1f}{unit}{suffix}"
             num /= 1024.0
-        return f"{num:.1f} Yi{suffix}"
+        return f"{num:.1f} Y{suffix}"
 
     # pylint: disable=invalid-name
     def do_GET(self):
         """
         Generate a response for the given path.
         :return: None if this function has generated the response.
-        False if no response was genereted, i.e. the path was not handled.
+        False if no response was generated, i.e. the path was not handled.
         """
         self.path = self.request_handler.path
         if "?" in self.path:
@@ -282,13 +282,19 @@ class Server:
     """
 
     def __init__(
-        self, log: logging.Logger, bind_address: str = "127.0.0.1", port: int = 8080
+        self,
+        log: logging.Logger,
+        bind_address: str = "127.0.0.1",
+        port: int = 8080,
+        daemon: bool = False,
     ):
         """
         :param log: for logging
         :param bind_address: use "0.0.0.0" to listen on all addresses.
         Defaults to localhost only.
         :param port: port to listen on.
+        :param daemon: if True, then this thread will not stop Python exiting
+        if it is still running.
         """
         self.log = log
         self.port = port
@@ -298,15 +304,14 @@ class Server:
         self.bind_address = bind_address
         self.url = f"http://{self.bind_address}:{self.port}/"
         self.thread = threading.Thread(
-            name="webserver", target=self.webserver.serve_forever
+            name="folderbrowser", target=self.webserver.serve_forever, daemon=daemon
         )
-        self.thread.setDaemon(False)
         self.thread.start()
         log.info(f"Server URL: {self.url}")
 
     def stop(self):
         """
-        Stop processing. Returns
+        Stop processing.
         :return: list of Exceptions encountered.
         """
         result = []

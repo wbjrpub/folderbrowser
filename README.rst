@@ -1,4 +1,4 @@
-Folder Server
+Folder Browser
 =======================
 
 |PyPI| |GitHub Actions|
@@ -41,7 +41,7 @@ Running
 
 This prints something like
 
-    2021-01-16 21:36:11,279 INFO: Server URL: http://127.0.0.1:8081/
+    2021-01-16 21:36:11,279 INFO: Server URL: http://127.0.0.1:8080/
 
 You can then browse the contents of the invocation directory via the URL shown.
 
@@ -116,7 +116,7 @@ Run tests on changes with
 Publishing
 ~~~~~~~~~~
 
-Use the bump2version_ command to release a new version.
+Use the bump2version_ command to release a new version (with argument `major`, `minor`, or `patch`).
 Push the created git tag which will trigger a GitHub action.
 
 .. _bump2version: https://github.com/c4urself/bump2version
