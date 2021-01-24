@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
-View unreleased change [here](https://github.com/wbjrpub/folderbrowser/compare/v0.1.3...HEAD).
+View unreleased change [here](https://github.com/wbjrpub/folderbrowser/compare/v0.1.4...HEAD).
 
-## [0.1.3](https://github.com/wbjrpub/folderbrowser/compare/v0.1.2...v0.1.3) - 2021-01-25
+## [0.1.4](https://github.com/wbjrpub/folderbrowser/compare/v0.1.2...v0.1.4) - 2021-01-25
 
 More tests. Prevent .. in path.
 
