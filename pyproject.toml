@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "folderbrowser"
-version = "0.1.2"
+version = "0.1.3"
 description = "Lightweight webserver to browse folder and its contents on a webbrowser"
 authors = ["Wouter Batelaan <wbjrpub@gmail.com>"]
 keywords = ["folder", "directory", "webserver"]
