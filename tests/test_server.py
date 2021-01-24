@@ -96,7 +96,16 @@ def test_server_file1000_parts():
 
 
 def test_server_fixtures_folder():
+    resp = requests.get("http://127.0.0.1:12345/fixtures")
+    _check_fixtures_folder_response(resp)
+
+
+def test_server_fixtures_folder_ending_with_slash():
     resp = requests.get("http://127.0.0.1:12345/fixtures/")
+    _check_fixtures_folder_response(resp)
+
+
+def _check_fixtures_folder_response(resp):
     print(resp)
     print(resp.text)
     assert resp.status_code == 200
@@ -114,6 +123,43 @@ def test_server_fixtures_folder():
         """<td><a href="file1000.txt?tail=40" title="Last 40 lines">[tail]</a></td>"""
         in resp.text
     )
+
+
+def test_server_dot_dot():
+    for prefix in (
+        "",
+        "./",
+        "fixtures/",
+        "fixtures/dummy/",
+    ):
+        for path in (
+            "..",
+            "/..",
+            "../",
+            "/../",
+        ):
+            for suffix1 in (
+                "",
+                "?",
+                "#",
+            ):
+                for suffix2 in (
+                    "..",
+                    "/..",
+                    "../",
+                    "/../",
+                ):
+                    sub_path = f"{prefix}{path}{suffix1}{suffix2}"
+                    if sub_path != "" and "...." not in sub_path:
+                        resp = requests.get(f"http://127.0.0.1:12345/{sub_path}")
+                        _check_bad_path_response(resp)
+
+
+def _check_bad_path_response(resp):
+    print(resp)
+    print(resp.text)
+    assert resp.status_code == 400
+    assert "Bad path: .. not allowed" in resp.text
 
 
 def test_server_non_existing_file():

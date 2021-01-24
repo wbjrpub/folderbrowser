@@ -3,10 +3,10 @@ Folder Browser
 
 |PyPI| |GitHub Actions|
 
-.. |PyPI| image:: https://img.shields.io/pypi/v/folderbrowser.svg
+.. |PyPI| image:: https://img.shields.io/pypi/v/folderbrowser.svg?
    :target: https://pypi.python.org/pypi/folderbrowser
    :alt: PyPI
-.. |GitHub Actions| image:: https://github.com/wbjrpub/folderbrowser/workflows/main/badge.svg
+.. |GitHub Actions| image:: https://github.com/wbjrpub/folderbrowser/workflows/main/badge.svg?
    :target: https://github.com/wbjrpub/folderbrowser/actions
    :alt: GitHub Actions
 
@@ -115,6 +115,19 @@ Run tests on changes with
 
 Publishing
 ~~~~~~~~~~
+
+High Level:
+
+- Choose a new version nr (increment major, minor, or patch)
+- Add to CHANGELOG.md!
+- make all
+- commit
+- git push origin HEAD:master
+- Check Github Actions: https://github.com/wbjrpub/folderbrowser/actions?query=workflow%3Amain
+- bump2version major|minor|patch
+- git push origin HEAD:master && git push --tags origin vX.Y.Z
+- Check Github Actions: https://github.com/wbjrpub/folderbrowser/actions?query=workflow%3Apublish
+
 
 Use the bump2version_ command to release a new version (with argument `major`, `minor`, or `patch`).
 Push the created git tag which will trigger a GitHub action.

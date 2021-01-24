@@ -65,6 +65,19 @@ table, th, td {
             num /= 1024.0
         return f"{num:.1f} Y{suffix}"
 
+    def _is_path_ok(self):
+        if (
+            "/../" in self.path
+            or self.path.startswith("../")
+            or self.path == ".."
+            or self.path.endswith("/..")
+        ):
+            self.request_handler.send_error(
+                400, f"Bad path: .. not allowed: ({self.path})"
+            )
+            return False
+        return True
+
     # pylint: disable=invalid-name
     def do_GET(self):
         """
@@ -77,6 +90,9 @@ table, th, td {
             self.path, query_params = self.path.split("?", 1)
         else:
             self.path, query_params = self.path, None
+
+        if not self._is_path_ok():
+            return None
 
         local_path = "." + self.path
         if os.path.isdir(local_path):
